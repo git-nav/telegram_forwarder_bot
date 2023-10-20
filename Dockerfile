@@ -1,4 +1,4 @@
-FROM okteto/python
+FROM okteto/python:3
 
 COPY . .
 
