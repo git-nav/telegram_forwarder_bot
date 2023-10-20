@@ -81,5 +81,16 @@ class Bot(Client):
         await super().stop()      
         await self.send_message(tg_log, "Bot Stopped........")        
 
-app = Bot()
-app.run()
+from flask import Flask
+from threading import Thread
+
+web_server = Flask(__name__) 
+
+def web():
+    web_server.run(host="0.0.0.0", port=5000)
+
+t = Thread(target=web)
+t.run()
+
+bot = Bot()
+bot.run()
