@@ -5,6 +5,7 @@ services:
     build: .
     expose:
       - 5000
+      - 5432
     ports:
       - 5000:5000 
       - 5432:5432
