@@ -32,6 +32,7 @@ if os.path.exists("config.env"):
 token = getenv("BOT_TOKEN", None)
 string = getenv("SESSION_STRING", None)
 database_url = getenv("DATABASE_URL", None)
+print(database_url)
 remove_string = list(x for x in getenv("REMOVE_STRING", "").split(";"))
 sudo_users = ["me"]
 temp_sudo = getenv("SUDO_USERS", None)
