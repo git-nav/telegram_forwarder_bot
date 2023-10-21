@@ -26,8 +26,8 @@ logging.basicConfig(format=("[%(asctime)s - %(name)s - %(levelname)s] %(message)
 log = logging.getLogger(__name__)
 
 # Getting environmental variables...
-# if os.path.exists("config.env"):
-#     load_dotenv("config.env", override=True)
+if os.path.exists("config.env"):
+    load_dotenv("config.env")
 
 token = getenv("BOT_TOKEN", None)
 string = getenv("SESSION_STRING", None)
@@ -36,7 +36,8 @@ remove_string = list(x for x in getenv("REMOVE_STRING", "").split(";"))
 sudo_users = ["me"]
 temp_sudo = getenv("SUDO_USERS", None)
 tg_log = getenv("LOG_CHANNEL", "me")
-
+log.info(token)
+log.info(string)
 if temp_sudo is not None:
     sudo_users.extend(temp_sudo.split(","))
 
