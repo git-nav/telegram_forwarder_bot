@@ -31,7 +31,7 @@ if os.path.exists("config.env"):
 
 token = getenv("BOT_TOKEN", None)
 string = getenv("SESSION_STRING", None)
-database_url = "postgres://clewhktn:8rs59V2pFt6wFRAP8dnyv2jIHQXtXyvF@suleiman.db.elephantsql.com/clewhktn"
+database_url = getenv("DATABASE_URL", None)
 remove_string = list(x for x in getenv("REMOVE_STRING", "").split(";"))
 sudo_users = ["me"]
 temp_sudo = getenv("SUDO_USERS", None)
