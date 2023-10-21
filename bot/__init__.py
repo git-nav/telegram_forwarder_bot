@@ -26,8 +26,8 @@ logging.basicConfig(format=("[%(asctime)s - %(name)s - %(levelname)s] %(message)
 log = logging.getLogger(__name__)
 
 # Getting environmental variables...
-if os.path.exists("config.env"):
-    load_dotenv("config.env", override=True)
+# if os.path.exists("config.env"):
+#     load_dotenv("config.env", override=True)
 
 token = getenv("BOT_TOKEN", None)
 string = getenv("SESSION_STRING", None)
