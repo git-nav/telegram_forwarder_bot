@@ -14,8 +14,10 @@ start_time = time()
 # Setting timezone
 def timetz(*args):
     return datetime.now(tz).timetuple()
-
-tz = timezone(getenv("TIMEZONE", 'Asia/Kolkata'))
+try:
+    tz = timezone(getenv("TIMEZONE"))
+except Exception:
+    tz = timezone('Asia/Kolkata')    
 
 logging.Formatter.converter = timetz
 
@@ -95,7 +97,7 @@ def web():
     web_server.run(host="0.0.0.0", port=5000)
 
 t = Thread(target=web)
-t.run()
+t.start()
 
-bot = Bot()
-bot.run()
+app = Bot()
+app.run()
