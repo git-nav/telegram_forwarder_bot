@@ -1,6 +1,7 @@
 from bot import log, db, cursor, sudo_users, start_time, app
 from pyrogram import Client, filters
-from time import time
+from pyrogram.errors import FloodWait
+from time import time, sleep
 from bot.utils.util import time_formatter, delete
 
 # Loading data
@@ -16,7 +17,7 @@ def sync_data_loader():
     from_chats = list(set(sync_data.keys()))
 
 sync_data_loader()
-
+log.info("Data sync loaded...")
 
 @Client.on_message(filters.chat(from_chats))
 def sync(client, message):    
@@ -24,7 +25,17 @@ def sync(client, message):
     cursor.execute(f"select to_chat from sync where from_chat={chat_id}")
     data = cursor.fetchall()
     for each_data in data:
-        message.copy(each_data[0])
+        while True:
+            try:
+                message.copy(each_data[0])
+            except FloodWait as wait:
+                sleep(wait.value)
+            except Exception as err:
+                log.error(err)    
+                break
+            else:
+                break
+                
 
 
 @Client.on_message(filters.command("addsync") & filters.user(sudo_users))
@@ -44,7 +55,7 @@ def add_sync(client, message):
     except Exception as e:
         log.exception(e)
         service_msg = app.send_message(message.chat.id, e)    
-    delete(service_msg, 15)
+    delete(service_msg, 10)
 
 @Client.on_message(filters.command("showsync") & filters.user(sudo_users))
 def show_sync(client, message):

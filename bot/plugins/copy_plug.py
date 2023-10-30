@@ -64,13 +64,14 @@ def status(client, message):
                 status.counter -= 1
                 break
 
-            if status.counter > 1:
+            if status.counter > 1:  #delete old status messages
                 status.counter -= 1
                 break
         delete(msg)
         
     except:
         status.counter -= 1
+        delete(msg)
 
         
 @Client.on_message(filters.command("cancel") & filters.user(sudo_users))

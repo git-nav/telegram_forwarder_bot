@@ -6,8 +6,6 @@ from bot.utils.util import progress_message
 OBJ_LIST = []
 
 class Copy:
-    
-    flood_wait = None
 
     def __init__(self, db_id):
         self.db_id = db_id
@@ -25,40 +23,41 @@ class Copy:
     def start_copy(self):
         global OBJ_LIST
         while self.run and self.current <= self.stop:
-
-            if Copy.flood_wait is not None:
-                sleep(Copy.flood_wait)
-
             try:
-
                 if self.mode == "all":
-                    try:
-                        app.copy_message(self.to_chat, self.from_chat, self.current)
-                        sleep(1)
-
-                    except FloodWait as wait:
-                        Copy.flood_wait = wait.value
-                        sleep(wait.value)
-                        Copy.flood_wait = None
-
-                    except Exception as error:
-                        log.error(error)
-
-                elif self.mode == "file":
-
-                    try:
-                        msg = app.get_messages(self.from_chat, self.current)
-                        if msg.video is not None or msg.document is not None or msg.photo is not None:
+                    while True:
+                        try:
                             app.copy_message(self.to_chat, self.from_chat, self.current)
                             sleep(1)
 
-                    except FloodWait as wait:
-                        Copy.flood_wait = wait.value
-                        sleep(wait.value)
-                        Copy.flood_wait = None
+                        except FloodWait as wait:
+                            sleep(wait.value)
 
-                    except Exception as error:
-                        log.error(error)    
+                        except Exception as error:
+                            log.error(error)
+                            break
+
+                        else:
+                            break    
+
+                elif self.mode == "file":
+                    while True:
+                        try:
+                            msg = app.get_messages(self.from_chat, self.current)
+                            if msg.video is not None or msg.document is not None or msg.photo is not None:
+                                app.copy_message(self.to_chat, self.from_chat, self.current)
+                                sleep(1)
+
+                        except FloodWait as wait:
+                            sleep(wait.value)
+                            
+
+                        except Exception as error:
+                            log.error(error) 
+                            break
+
+                        else:
+                            break   
 
                 else:
                     log.error("Invalid mode")        
@@ -80,8 +79,7 @@ class Copy:
         msg = {
             "from": self.from_chat_name,
             "to": self.to_chat_name,
-            "id": self.obj_id,
-            "state": "Copying..." if Copy.flood_wait is None else "Sleeping..."
+            "id": self.obj_id
         }
         return progress_message((self.current-self.start), (self.stop-self.start), msg, self.c_time)
 
