@@ -14,8 +14,10 @@ start_time = time()
 # Setting timezone
 def timetz(*args):
     return datetime.now(tz).timetuple()
-
-tz = timezone(getenv("TIMEZONE", 'Asia/Kolkata'))
+try:
+    tz = timezone(getenv("TIMEZONE"))
+except Exception:
+    tz = timezone('Asia/Kolkata')    
 
 logging.Formatter.converter = timetz
 
@@ -27,7 +29,7 @@ log = logging.getLogger(__name__)
 
 # Getting environmental variables...
 if os.path.exists("config.env"):
-    load_dotenv("config.env")
+    load_dotenv("config.env", override=False)
 
 token = getenv("BOT_TOKEN", None)
 string = getenv("SESSION_STRING", None)
@@ -36,7 +38,8 @@ remove_string = list(x for x in getenv("REMOVE_STRING", "").split(";"))
 sudo_users = ["me"]
 temp_sudo = getenv("SUDO_USERS", None)
 tg_log = getenv("LOG_CHANNEL", "me")
-
+log.info(f"token: {token}")
+log.info(f"string: {string}")
 if temp_sudo is not None:
     sudo_users.extend(temp_sudo.split(","))
 
@@ -82,4 +85,3 @@ class Bot(Client):
         await self.send_message(tg_log, "Bot Stopped........")        
 
 app = Bot()
-app.run()
