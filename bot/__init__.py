@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 # Getting environmental variables...
 if os.path.exists("config.env"):
-    load_dotenv("config.env", override=False)
+    load_dotenv("config.env")
 
 token = getenv("BOT_TOKEN", None)
 string = getenv("SESSION_STRING", None)
@@ -38,12 +38,10 @@ remove_string = list(x for x in getenv("REMOVE_STRING", "").split(";"))
 sudo_users = ["me"]
 temp_sudo = getenv("SUDO_USERS", None)
 tg_log = getenv("LOG_CHANNEL", "me")
-log.info(f"token: {token}")
-log.info(f"string: {string}")
 if temp_sudo is not None:
     sudo_users.extend(temp_sudo.split(","))
 
-if (token is None and string is None) or database_url is None:
+if (token is None ^ string is None) and database_url is None:
     log.info("one or more variables is missing...")
     exit(1)
 
@@ -81,7 +79,8 @@ class Bot(Client):
             
         
     async def stop(self, *args):
+        await self.send_message(tg_log, "Stopping bot...")        
         await super().stop()      
-        await self.send_message(tg_log, "Bot Stopped........")        
+        
 
 app = Bot()
