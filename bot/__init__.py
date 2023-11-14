@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 # Getting environmental variables...
 if os.path.exists("config.env"):
-    load_dotenv("config.env")
+    load_dotenv("config.env", override=False)
 
 token = getenv("BOT_TOKEN", None)
 string = getenv("SESSION_STRING", None)
@@ -41,7 +41,7 @@ tg_log = getenv("LOG_CHANNEL", "me")
 if temp_sudo is not None:
     sudo_users.extend(temp_sudo.split(","))
 
-if (token is None ^ string is None) and database_url is None:
+if ((token is None) ^ (string is None)) and database_url is None:
     log.info("one or more variables is missing...")
     exit(1)
 
@@ -50,7 +50,7 @@ try:
     db = psycopg2.connect(database_url)
     cursor = db.cursor()
     cursor.execute("create table if not exists copy(id serial primary key, mode varchar, from_chat bigint, to_chat bigint, start int, current int, stop int)")
-    cursor.execute("create table if not exists sync(id serial primary key, from_chat bigint, from_chat_name varchar, to_chat bigint, to_chat_name varchar)")
+    cursor.execute("create table if not exists sync(id serial primary key, from_chat bigint, from_chat_name varchar, to_chat bigint, to_chat_name varchar, last_id int)")
     db.commit()
 
 except Exception as e:
@@ -75,12 +75,12 @@ class Bot(Client):
         await super().start()
         cursor.execute("select * from copy")
         res = cursor.fetchall()
-        await self.send_message(tg_log, "Bot started..." if len(res)==0 else "Bot started...\nSend <code>/resume</code> to restart the pending tasks...")
+        await self.send_message(tg_log, "Starting bot..." if len(res)==0 else "Bot started...\nSend <code>/resume</code> to restart the pending tasks...")
             
         
     async def stop(self, *args):
-        await self.send_message(tg_log, "Stopping bot...")        
+        await self.send_message(tg_log, "Stopping bot...")
         await super().stop()      
-        
+                
 
 app = Bot()
