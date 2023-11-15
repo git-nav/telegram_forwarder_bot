@@ -9,7 +9,7 @@ import os
 def execute(client, message):
     message.delete()
     query = message.text[5:]
-    text = "Returned data\n\n\n"
+    text = "Returned data\n\n"
     try:
         cursor.execute(f"{query}")
         db.commit()
@@ -20,7 +20,7 @@ def execute(client, message):
         db.rollback()    
 
     except ProgrammingError:
-        text += "Action Performed..."
+        text += "Query Executed..."
 
     except Exception as e:
         log.exception(e)

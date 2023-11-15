@@ -75,7 +75,7 @@ class Bot(Client):
         await super().start()
         cursor.execute("select * from copy")
         res = cursor.fetchall()
-        await self.send_message(tg_log, "Starting bot..." if len(res)==0 else "Bot started...\nSend <code>/resume</code> to restart the pending tasks...")
+        await self.send_message(tg_log, "Starting bot..." if len(res)==0 else "Bot started...\nSend <a href='/resume/'>/resume</a> to restart the pending tasks...")
             
         
     async def stop(self, *args):

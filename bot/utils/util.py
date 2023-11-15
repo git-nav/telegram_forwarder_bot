@@ -22,7 +22,7 @@ def time_formatter(seconds):
     return time_str[:-2]
 
 def progress_message(current, total, msg, start_time):
-    PROGRESS_BAR = "\n\n{a} ➤ {b}\n🚀 : {c}%\n⏱️ : {d}\n<code>/cancel {e}</code>"
+    PROGRESS_BAR = "\n\n{a} ➤ {b}\n🚀 : {c}%\n⏱️ : {d}\n<a href='/cancel {e}'>/cancel {e}</a>"
     now = time()
     diff = now - start_time
     percentage = current /total * 100 
@@ -32,7 +32,7 @@ def progress_message(current, total, msg, start_time):
         "".join(["⬢" for i in range(math.floor(percentage/5))]),
         "".join(["⬡" for i in range(20 - math.floor(percentage/5))])
     )
-    return "{}/{}".format(current, total) + progress + PROGRESS_BAR.format(
+    return "Current/Total : {}/{}".format(current, total) + progress + PROGRESS_BAR.format(
         a=msg["from"],
         b=msg["to"],
         c=round(percentage),
