@@ -57,7 +57,6 @@ except Exception as e:
     log.error(e)
     exit(1)
 
-
 log.info("Welcome to telegram message forwarder bot...")
 
 class Bot(Client):

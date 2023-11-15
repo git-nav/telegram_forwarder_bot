@@ -32,7 +32,7 @@ def progress_message(current, total, msg, start_time):
         "".join(["⬢" for i in range(math.floor(percentage/5))]),
         "".join(["⬡" for i in range(20 - math.floor(percentage/5))])
     )
-    return "Current/Total : {}/{}".format(current, total) + progress + PROGRESS_BAR.format(
+    return "Current / Total : {}/{}".format(current, total) + progress + PROGRESS_BAR.format(
         a=msg["from"],
         b=msg["to"],
         c=round(percentage),

@@ -97,5 +97,5 @@ def del_sync(client, message):
     except Exception as e:
         log.exception(e)
         service_msg = app.send_message(message.chat.id, e)        
-    delete(service_msg, 15)
+    delete(service_msg, 10)
         

@@ -99,4 +99,3 @@ def resume(client, message):
         obj.start_copy()
     serv_msg = app.send_message(message.chat.id, "Tasks resumed...\nCheck <a href='/status'>/status</a> for details..." if len(copy_list) > 0 else "No task to resume")    
     delete(serv_msg)
-

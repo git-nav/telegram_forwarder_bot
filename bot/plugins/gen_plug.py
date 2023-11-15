@@ -58,3 +58,4 @@ General Commands:
     """
     service_msg = app.send_message(message.chat.id, text)
     delete(service_msg)
+    
