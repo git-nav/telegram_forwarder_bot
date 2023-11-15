@@ -31,7 +31,7 @@ def copy(client, message):
         db_id = cursor.fetchone()[0]
         obj = Copy(db_id)
         OBJ_LIST.append(obj)
-        service_msg = app.send_message(message.chat.id, "Task added...\nCheck <code>/status</code> for details...") 
+        service_msg = app.send_message(message.chat.id, "Task added...\nCheck <a href='/status'>/status</a> for details...") 
         delete(service_msg, 5)
         log.info(f"Copy started from {from_chat} -> {to_chat}")
         obj.start_copy()
@@ -96,6 +96,6 @@ def resume(client, message):
         obj = Copy(each[0])
         OBJ_LIST.append(obj)
         obj.start_copy()
-    serv_msg = app.send_message(message.chat.id, "Tasks resumed...\nCheck <code>/status</code> for details..." if len(copy_list) > 0 else "No task to resume")    
+    serv_msg = app.send_message(message.chat.id, "Tasks resumed...\nCheck <a href='/status'>/status</a> for details..." if len(copy_list) > 0 else "No task to resume")    
     delete(serv_msg)
 

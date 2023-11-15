@@ -92,7 +92,7 @@ def del_sync(client, message):
         del_id = cursor.fetchall()[int(data[1])-1][0]
         cursor.execute(f"delete from sync where id={del_id}")    
         db.commit()
-        service_msg = app.send_message(message.chat.id, f"Sync Removed...<code>/restart</code> the bot...")
+        service_msg = app.send_message(message.chat.id, f"Sync Removed...<a href='/restart'>/restart</a> the bot...")
 
     except Exception as e:
         log.exception(e)
