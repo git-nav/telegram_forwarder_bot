@@ -59,6 +59,36 @@ except Exception as e:
 
 log.info("Welcome to telegram message forwarder bot...")
 
+# Loading data
+sync_data = {}
+from_chats = []
+
+
+async def sync_data_loader(app):
+    global sync_data, from_chats
+    cursor.execute("select from_chat, to_chat, last_id from sync")
+    try:
+        for each in cursor.fetchall():
+            from_chat, to_chat, start_id = each
+            stop_id = None
+            async for msg in app.get_chat_history(from_chat, 1):
+                stop_id = msg.id
+            try:
+                sync_data[from_chat].append([to_chat, start_id, stop_id])
+            except KeyError:
+                sync_data[from_chat] = [[to_chat, start_id, stop_id]]
+
+        from_chats = list(set(sync_data.keys()))
+    except Exception as err:
+        log.exception(err)
+        pass    
+    print(sync_data)
+    print(from_chats)
+
+log.info("Sync data loaded...")
+
+
+
 class Bot(Client):
 
     def __init__(self):
@@ -75,6 +105,7 @@ class Bot(Client):
         cursor.execute("select * from copy")
         res = cursor.fetchall()
         await self.send_message(tg_log, "Starting bot..." if len(res)==0 else "Bot started...\nSend <a href='/resume'>/resume</a> to restart the pending tasks...")
+        await sync_data_loader(self)
             
         
     async def stop(self, *args):

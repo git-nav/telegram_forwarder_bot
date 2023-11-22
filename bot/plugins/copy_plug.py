@@ -1,5 +1,5 @@
 from pyrogram import Client, filters
-from bot import db, cursor, log, sudo_users, start_time, app
+from bot import db, cursor, log, sudo_users, start_time, app, sync_data
 from psycopg2.errors import InFailedSqlTransaction
 from time import time, sleep
 from bot.utils.util import time_formatter, static_vars, delete
@@ -71,6 +71,7 @@ def status(client, message):
         
     except:
         status.counter -= 1
+        delete(msg)
 
         
 @Client.on_message(filters.command("cancel") & filters.user(sudo_users))
@@ -90,6 +91,14 @@ def cancel(client, message):
 @Client.on_message(filters.command("resume") & filters.user(sudo_users))
 def resume(client, message):
     message.delete()
+    if len(sync_data) > 0:
+        for each in sync_data.keys():
+            for each1 in sync_data[each]:
+                from_chat = each
+                to_chat, start_id, stop_id = each1
+                cursor.execute(f"insert into copy(mode, from_chat, to_chat, start, current, stop) values('all', {from_chat}, {to_chat}, {start_id}, {start_id}, {stop_id})")
+                cursor.execute(f"update sync set last_id = {stop_id} where from_chat = {from_chat} and to_chat = {to_chat}")
+                db.commit()
     cursor.execute("select id from copy")
     copy_list = cursor.fetchall()
     for each in copy_list:
