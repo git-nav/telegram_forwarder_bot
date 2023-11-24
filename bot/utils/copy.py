@@ -64,7 +64,7 @@ class Copy:
 
 
             except Exception as err:
-                log.error(err)              
+                log.exception(err)              
 
             finally:
                 self.current += 1      

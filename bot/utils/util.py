@@ -22,10 +22,10 @@ def time_formatter(seconds):
     return time_str[:-2]
 
 def progress_message(current, total, msg, start_time):
-    PROGRESS_BAR = "\n\n{a} ➤ {b}\n🚀 : {c}%\n⏱️ : {d}\n<a href='/cancel {e}'>/cancel {e}</a>"
+    PROGRESS_BAR = "\n\n{a} ➤ {b}\n🚀 : {c}%\n⏱️ : {d}\n<a href='/cancel {e}'>/cancel_{e}</a>"
     now = time()
     diff = now - start_time
-    percentage = current /total * 100 
+    percentage = current / total * 100 
     speed = current / diff
     estimated_seconds = round((total-current)/speed)
     progress = "\n{0}{1}".format(
@@ -37,7 +37,7 @@ def progress_message(current, total, msg, start_time):
         b=msg["to"],
         c=round(percentage),
         d=time_formatter(estimated_seconds),
-        e=msg["id"]
+        e=msg["id"]        
     )
 
 def static_vars(**kwargs):
@@ -47,6 +47,6 @@ def static_vars(**kwargs):
         return func
     return decorate
 
-def delete( message, sleep_time=10):
+def delete(message, sleep_time=10):
     sleep(sleep_time)
     message.delete()

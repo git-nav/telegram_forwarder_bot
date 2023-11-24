@@ -11,6 +11,7 @@ from pyrogram import Client
 
 start_time = time()
 
+
 # Setting timezone
 def timetz(*args):
     return datetime.now(tz).timetuple()
@@ -21,11 +22,13 @@ except Exception:
 
 logging.Formatter.converter = timetz
 
+
 # Setting logger...
 logging.basicConfig(format=("[%(asctime)s - %(name)s - %(levelname)s] %(message)s"),datefmt='%Y-%m-%d %I:%M:%S %p',
                     handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()], level=logging.INFO)
 
 log = logging.getLogger(__name__)
+
 
 # Getting environmental variables...
 if os.path.exists("config.env"):
@@ -45,6 +48,7 @@ if ((token is None) ^ (string is None)) and database_url is None:
     log.info("one or more variables is missing...")
     exit(1)
 
+
 # Initializing database...
 try:
     db = psycopg2.connect(database_url)
@@ -59,34 +63,31 @@ except Exception as e:
 
 log.info("Welcome to telegram message forwarder bot...")
 
-# Loading data
-sync_data = {}
-from_chats = []
 
+# Loading data
+sync_datas = {}
+cursor.execute("select from_chat from sync")
+from_chats = list(set(from_chat[0] for from_chat in cursor.fetchall()))
 
 async def sync_data_loader(app):
-    global sync_data, from_chats
+    global sync_datas
     cursor.execute("select from_chat, to_chat, last_id from sync")
     try:
-        for each in cursor.fetchall():
-            from_chat, to_chat, start_id = each
+        for sync_data in cursor.fetchall():
+            from_chat, to_chat, start_id = sync_data
             stop_id = None
             async for msg in app.get_chat_history(from_chat, 1):
                 stop_id = msg.id
             try:
-                sync_data[from_chat].append([to_chat, start_id, stop_id])
+                sync_datas[from_chat].append([to_chat, start_id, stop_id])
             except KeyError:
-                sync_data[from_chat] = [[to_chat, start_id, stop_id]]
+                sync_datas[from_chat] = [[to_chat, start_id, stop_id]]
 
-        from_chats = list(set(sync_data.keys()))
     except Exception as err:
         log.exception(err)
         pass    
-    print(sync_data)
-    print(from_chats)
-
-log.info("Sync data loaded...")
-
+    
+log.info("Sync datas loaded...")
 
 
 class Bot(Client):
@@ -102,10 +103,11 @@ class Bot(Client):
 
     async def start(self):
         await super().start()
+        await sync_data_loader(self)
         cursor.execute("select * from copy")
         res = cursor.fetchall()
         await self.send_message(tg_log, "Starting bot..." if len(res)==0 else "Bot started...\nSend <a href='/resume'>/resume</a> to restart the pending tasks...")
-        await sync_data_loader(self)
+        
             
         
     async def stop(self, *args):

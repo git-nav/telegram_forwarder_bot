@@ -1,6 +1,6 @@
 from pyrogram import Client, filters
-from bot import db, cursor, log, sudo_users, start_time, app, sync_data
-from psycopg2.errors import InFailedSqlTransaction
+from bot import db, cursor, log, sudo_users, start_time, app
+from psycopg2.errors import ProgrammingError
 from time import time, sleep
 from bot.utils.util import time_formatter, static_vars, delete
 from bot.utils.copy import Copy, OBJ_LIST
@@ -20,10 +20,9 @@ def copy(client, message):
         try:
             cursor.execute(f"delete from copy where from_chat = {from_chat} and to_chat = {to_chat}")
             db.commit()
-        except InFailedSqlTransaction:
-            db.rollback()
-
-    
+        except Exception:
+            pass
+        
         cursor.execute(f"insert into copy(mode, from_chat, to_chat, start, current, stop) values('{mode}', {from_chat}, {to_chat}, {start}, {current}, {stop})")    
         db.commit()
 
@@ -74,9 +73,9 @@ def status(client, message):
         delete(msg)
 
         
-@Client.on_message(filters.command("cancel") & filters.user(sudo_users))
+@Client.on_message(filters.regex("cancel") & filters.user(sudo_users))
 def cancel(client, message):
-    msg = message.command
+    msg = message.text.split("_")
     message.delete()
     for each in OBJ_LIST:
         if msg[1] == each.obj_id:
@@ -90,10 +89,11 @@ def cancel(client, message):
 
 @Client.on_message(filters.command("resume") & filters.user(sudo_users))
 def resume(client, message):
+    from bot import sync_datas
     message.delete()
-    if len(sync_data) > 0:
-        for each in sync_data.keys():
-            for each1 in sync_data[each]:
+    if len(sync_datas) > 0:
+        for each in sync_datas.keys():
+            for each1 in sync_datas[each]:
                 from_chat = each
                 to_chat, start_id, stop_id = each1
                 cursor.execute(f"insert into copy(mode, from_chat, to_chat, start, current, stop) values('all', {from_chat}, {to_chat}, {start_id}, {start_id}, {stop_id})")
@@ -101,10 +101,9 @@ def resume(client, message):
                 db.commit()
     cursor.execute("select id from copy")
     copy_list = cursor.fetchall()
+    serv_msg = app.send_message(message.chat.id, "Tasks resumed...\nCheck <a href='/status'>/status</a> for details..." if len(copy_list) > 0 else "No task to resume")    
     for each in copy_list:
         obj = Copy(each[0])
         OBJ_LIST.append(obj)
         obj.start_copy()
-    serv_msg = app.send_message(message.chat.id, "Tasks resumed...\nCheck <a href='/status'>/status</a> for details..." if len(copy_list) > 0 else "No task to resume")    
-    delete(serv_msg)
-
+    delete(serv_msg, 5)
