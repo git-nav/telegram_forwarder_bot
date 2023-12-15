@@ -1,5 +1,6 @@
 import math
-from time import time, sleep
+from time import time
+import asyncio
 
 def size_formatter(byte):
     units = ["Bytes", "KB", "MB", "GB", "TB", "PB"]
@@ -24,15 +25,15 @@ def time_formatter(seconds):
 def progress_message(current, total, msg, start_time):
     PROGRESS_BAR = "\n\n{a} ➤ {b}\n🚀 : {c}%\n⏱️ : {d}\n<a href='/cancel {e}'>/cancel_{e}</a>"
     now = time()
-    diff = now - start_time
+    diff = now - start_time    
     percentage = current / total * 100 
-    speed = current / diff
+    speed = current/diff if current / diff != 0 else 1
     estimated_seconds = round((total-current)/speed)
     progress = "\n{0}{1}".format(
         "".join(["⬢" for i in range(math.floor(percentage/5))]),
         "".join(["⬡" for i in range(20 - math.floor(percentage/5))])
     )
-    return "Current / Total : {}/{}".format(current, total) + progress + PROGRESS_BAR.format(
+    return "Current / Total : {}/{}".format(current, total+1) + progress + PROGRESS_BAR.format(
         a=msg["from"],
         b=msg["to"],
         c=round(percentage),
@@ -47,6 +48,6 @@ def static_vars(**kwargs):
         return func
     return decorate
 
-def delete(message, sleep_time=10):
-    sleep(sleep_time)
-    message.delete()
+async def delete(message, sleep_time=10):
+    await asyncio.sleep(sleep_time)
+    await message.delete()

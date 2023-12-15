@@ -1,49 +1,51 @@
 from pyrogram import Client, filters
 from bot import db, cursor, log, sudo_users, start_time, app
 from psycopg2.errors import ProgrammingError
-from time import time, sleep
+from time import time
 from bot.utils.util import time_formatter, static_vars, delete
 from bot.utils.copy import Copy, OBJ_LIST
-
+import asyncio
 
 @Client.on_message(filters.command("copy") & filters.user(sudo_users))
-def copy(client, message):
+async def copy(client, message):
     msg = message.command
     try:
         mode = msg[1]
-        from_chat = msg[2]
-        to_chat = msg[3]
+        from_chat = int(msg[2])
+        to_chat = int(msg[3])
         start = msg[4]
         current = msg[4]
         stop = msg[5]
-
+        from_chat_name = (await app.get_chat(from_chat)).title
+        to_chat_name = (await app.get_chat(to_chat)).title
         try:
             cursor.execute(f"delete from copy where from_chat = {from_chat} and to_chat = {to_chat}")
             db.commit()
-        except Exception:
-            pass
+        except ProgrammingError:
+            db.rollback()    
+        except Exception as e:            
+            log.exception(e)
         
-        cursor.execute(f"insert into copy(mode, from_chat, to_chat, start, current, stop) values('{mode}', {from_chat}, {to_chat}, {start}, {current}, {stop})")    
+        cursor.execute(f"insert into copy(mode, from_chat, from_chat_name, to_chat, to_chat_name, start, current, stop) values('{mode}', {from_chat}, '{from_chat_name}', {to_chat}, '{to_chat_name}', {start}, {current}, {stop})")    
         db.commit()
 
         cursor.execute(f"select id from copy where from_chat = {from_chat} and to_chat = {to_chat}")
         db_id = cursor.fetchone()[0]
         obj = Copy(db_id)
         OBJ_LIST.append(obj)
-        service_msg = app.send_message(message.chat.id, "Task added...\nCheck <a href='/status'>/status</a> for details...") 
-        delete(service_msg, 5)
-        log.info(f"Copy started from {from_chat} -> {to_chat}")
-        obj.start_copy()
+        log.info(f"Starting copy from {from_chat} -> {to_chat}")
+        tasks = [obj.start_copy(), status(client, message)]
+        await asyncio.gather(*tasks)
 
     except Exception as e:
         log.exception(e)
-        service_msg = app.send_message(message.chat.id, e)    
-    delete(service_msg, 15)    
+        service_msg = await app.send_message(message.chat.id, e)    
+        await delete(service_msg, 15)    
 
 @Client.on_message(filters.command("status") & filters.user(sudo_users))
 @static_vars(counter = 0)
-def status(client, message):
-    message.delete()
+async def status(client, message):
+    await message.delete()
     def get_status():
         status = ""
         for each in OBJ_LIST:
@@ -51,59 +53,56 @@ def status(client, message):
         status += f"Uptime : {time_formatter(time()-start_time)}"    
         return status
     
-    msg = app.send_message(message.chat.id, get_status() if len(OBJ_LIST)>0 else f"No process, I'm sleeping...\n\nUptime : {time_formatter(time()-start_time)}")    
+    msg = await app.send_message(message.chat.id, get_status() if len(OBJ_LIST)>0 else f"No process, I'm sleeping...\n\nUptime : {time_formatter(time()-start_time)}")    
     status.counter += 1
     try:
         while True:
-            sleep(5)
+            await asyncio.sleep(5)
             if len(OBJ_LIST)>0:
-                msg.edit(get_status())  
+                await msg.edit(get_status())  
             else:
-                delete(msg)
+                await delete(msg)
                 status.counter -= 1
                 break
 
             if status.counter > 1:
                 status.counter -= 1
                 break
-        delete(msg)
+        await delete(msg, 0)
         
     except:
         status.counter -= 1
-        delete(msg)
+        await delete(msg, 0)
 
         
 @Client.on_message(filters.regex("cancel") & filters.user(sudo_users))
-def cancel(client, message):
+async def cancel(client, message):
     msg = message.text.split("_")
-    message.delete()
+    await message.delete()
     for each in OBJ_LIST:
         if msg[1] == each.obj_id:
-            each.cancel()
-        else:
-            service_msg = app.send_message(message.chat.id, "Wrong Hash!")    
-            delete(service_msg)
-
-    sleep(2)
-    status(client, message)        
+            await each.cancel()
+            await status(client, message)        
+            return    
+    service_msg = await app.send_message(message.chat.id, "Wrong Hash!")    
+    await delete(service_msg)
+    
 
 @Client.on_message(filters.command("resume") & filters.user(sudo_users))
-def resume(client, message):
-    from bot import sync_datas
-    message.delete()
-    if len(sync_datas) > 0:
-        for each in sync_datas.keys():
-            for each1 in sync_datas[each]:
-                from_chat = each
-                to_chat, start_id, stop_id = each1
-                cursor.execute(f"insert into copy(mode, from_chat, to_chat, start, current, stop) values('all', {from_chat}, {to_chat}, {start_id}, {start_id}, {stop_id})")
-                cursor.execute(f"update sync set last_id = {stop_id} where from_chat = {from_chat} and to_chat = {to_chat}")
-                db.commit()
+async def resume(client, message):
+    await message.delete()
     cursor.execute("select id from copy")
-    copy_list = cursor.fetchall()
-    serv_msg = app.send_message(message.chat.id, "Tasks resumed...\nCheck <a href='/status'>/status</a> for details..." if len(copy_list) > 0 else "No task to resume")    
-    for each in copy_list:
-        obj = Copy(each[0])
-        OBJ_LIST.append(obj)
-        obj.start_copy()
-    delete(serv_msg, 5)
+    copy_list = cursor.fetchall() 
+        
+    if len(copy_list) > 0:
+        task = []
+        for pending_copy in copy_list:
+            obj = Copy(pending_copy[0])
+            OBJ_LIST.append(obj)
+            task.append(obj.start_copy())
+        task.append(status(client, message))
+        await asyncio.gather(*task)
+
+    else:    
+        serv_msg = await app.send_message(message.chat.id, "No task to resume")
+        await delete(serv_msg, 5)
