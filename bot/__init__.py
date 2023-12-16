@@ -53,8 +53,8 @@ if ((token is None) ^ (string is None)) and database_url is None:
 try:
     db = psycopg2.connect(database_url)
     cursor = db.cursor()
-    cursor.execute("create table if not exists copy(id serial primary key, mode varchar(10), from_chat bigint, from_chat_name varchar(30), to_chat bigint,to_chat_name varchar(30), start int, current int, stop int)")
-    cursor.execute("create table if not exists sync(id serial primary key, from_chat bigint, from_chat_name varchar(10), to_chat bigint, to_chat_name varchar(10), last_id int)")
+    cursor.execute("create table if not exists copy(id serial primary key, mode varchar(10), from_chat bigint, from_chat_name varchar(255), to_chat bigint,to_chat_name varchar(255), start int, current int, stop int)")
+    cursor.execute("create table if not exists sync(id serial primary key, from_chat bigint, from_chat_name varchar(255), to_chat bigint, to_chat_name varchar(255), last_id int)")
     db.commit()
 
 except Exception as e:

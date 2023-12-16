@@ -1,6 +1,6 @@
 from pyrogram import Client, filters
 from bot import db, cursor, log, sudo_users, start_time, app
-from psycopg2.errors import ProgrammingError
+from psycopg2.errors import ProgrammingError, InFailedSqlTransaction
 from time import time
 from bot.utils.util import time_formatter, static_vars, delete
 from bot.utils.copy import Copy, OBJ_LIST
@@ -21,7 +21,7 @@ async def copy(client, message):
         try:
             cursor.execute(f"delete from copy where from_chat = {from_chat} and to_chat = {to_chat}")
             db.commit()
-        except ProgrammingError:
+        except (ProgrammingError, InFailedSqlTransaction):
             db.rollback()    
         except Exception as e:            
             log.exception(e)
