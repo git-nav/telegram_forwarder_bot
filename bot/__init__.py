@@ -126,7 +126,7 @@ class Bot(Client):
         
     async def stop(self, *args):
         await self.send_message(tg_log, "Stopping bot...")
-        await super().stop()      
+        super().stop()      
                 
 
 app = Bot()
