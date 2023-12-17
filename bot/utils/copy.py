@@ -28,10 +28,10 @@ class Copy:
                     while True:
                         try:
                             await app.copy_message(self.to_chat, self.from_chat, self.current)
-                            await asyncio.sleep(0.8)
+                            await asyncio.sleep(1.5)
 
                         except FloodWait as wait:
-                            await asyncio.sleep(wait.value)
+                            await asyncio.sleep(wait.value + 5)
 
                         except Exception as error:
                             log.error(error)
@@ -46,12 +46,11 @@ class Copy:
                             msg = await app.get_messages(self.from_chat, self.current)
                             if msg.video is not None or msg.document is not None or msg.photo is not None:
                                 await app.copy_message(self.to_chat, self.from_chat, self.current)
-                                await asyncio.sleep(0.8)
+                                await asyncio.sleep(1.5)
 
                         except FloodWait as wait:
-                            await asyncio.sleep(wait.value)
+                            await asyncio.sleep(wait.value + 5)
                             
-
                         except Exception as error:
                             log.error(error) 
                             break
