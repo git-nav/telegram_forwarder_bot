@@ -1,10 +1,11 @@
 from pyrogram import Client, filters
-from bot import db, cursor, log, sudo_users, start_time, app
+from bot import db, log, sudo_users, start_time, app
 from psycopg2.errors import ProgrammingError, InFailedSqlTransaction
 from time import time
 from bot.utils.util import time_formatter, static_vars, delete
 from bot.utils.copy import Copy, OBJ_LIST
 import asyncio
+
 
 @Client.on_message(filters.command("copy") & filters.user(sudo_users))
 async def copy(client, message):
@@ -18,6 +19,7 @@ async def copy(client, message):
         stop = msg[5]
         from_chat_name = (await app.get_chat(from_chat)).title
         to_chat_name = (await app.get_chat(to_chat)).title
+        cursor = db.cursor()
         try:
             cursor.execute(f"delete from copy where from_chat = {from_chat} and to_chat = {to_chat}")
             db.commit()
@@ -41,7 +43,10 @@ async def copy(client, message):
         log.exception(e)
         service_msg = await app.send_message(message.chat.id, e)    
         await delete(service_msg, 15)    
+    finally:
+        cursor.close()    
 
+    
 @Client.on_message(filters.command("status") & filters.user(sudo_users))
 @static_vars(counter = 0)
 async def status(client, message):
@@ -87,22 +92,3 @@ async def cancel(client, message):
     service_msg = await app.send_message(message.chat.id, "Wrong Hash!")    
     await delete(service_msg)
     
-
-@Client.on_message(filters.command("resume") & filters.user(sudo_users))
-async def resume(client, message):
-    await message.delete()
-    cursor.execute("select id from copy")
-    copy_list = cursor.fetchall() 
-        
-    if len(copy_list) > 0:
-        task = []
-        for pending_copy in copy_list:
-            obj = Copy(pending_copy[0])
-            OBJ_LIST.append(obj)
-            task.append(obj.start_copy())
-        task.append(status(client, message))
-        await asyncio.gather(*task)
-
-    else:    
-        serv_msg = await app.send_message(message.chat.id, "No task to resume")
-        await delete(serv_msg, 5)

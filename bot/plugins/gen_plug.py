@@ -1,9 +1,10 @@
 from pyrogram import Client, filters
-from bot import app, db, cursor, sudo_users, log
+from bot import app, db, sudo_users, log, owner_id
 from psycopg2.errors import InFailedSqlTransaction, ProgrammingError
 from bot.utils.util import delete
 import sys
 import os
+
 
 @Client.on_message(filters.command("exe") & filters.user(sudo_users))
 async def execute(client, message):
@@ -11,6 +12,7 @@ async def execute(client, message):
     query = message.text[5:]
     text = "Returned data\n\n"
     try:
+        cursor = db.cursor()
         cursor.execute(f"{query}")
         for each in cursor.fetchall():
             text += str(each) + "\n"
@@ -27,17 +29,84 @@ async def execute(client, message):
         text += str(e)
 
     finally:
+        cursor.close()
         service_msg = await app.send_message(message.chat.id, text)
         await delete(service_msg, 15)        
 
-@Client.on_message(filters.command("restart") & filters.user(sudo_users))
-async def restart(client, message):
-    await message.reply_text("Restarting...")
-    await app.stop()
-    python_path = sys.executable
-    os.execl(python_path, "python -m bot")
+@Client.on_message(filters.command("addsudo") & filters.user(owner_id))
+async def add_sudo(client, message):
+    await message.delete()
+    try:
+        user = message.command[1]     
+        if user not in sudo_users:
+            with open("config.env", "r+") as f:
+                config = ""
+                for line in f:
+                    if "SUDO_USERS" in line:
+                        line = line.replace("\n", "").strip()
+                        last_char = line[-1]
+                        updated = ""
+                        if last_char.isnumeric():
+                            updated = line + f",{user}\n"
+                        else:
+                            updated = line + f"{user}\n"   
+                        config += updated
+                    else:
+                        config += line
 
-@Client.on_message(filters.command("help") & filters.user(sudo_users))
+                f.seek(0)
+                f.write(config)
+
+            await delete(await app.send_message(message.chat.id, f"{user} added as sudo user\n<a href='/restart'>/Restart</a> now"), 5)
+
+        else:
+            await delete(await app.send_message(message.chat.id, f"{user} already sudo user"), 5)
+
+    except Exception as e:
+        await app.send_message(message.chat.id, str(e))
+
+
+@Client.on_message(filters.command("showsudo") & filters.user(owner_id))
+async def show_sudo(client, message):
+    await message.delete()
+    try:
+        msg = "Sudo Users:\n\n"
+        for each in sudo_users:
+            msg += f"<code>{each}</code>\n"
+        await app.send_message(message.chat.id, msg)    
+
+    except Exception as e:
+        await app.send_message(message.chat.id, str(e))
+
+
+@Client.on_message(filters.command("delsudo") & filters.user(owner_id))
+async def del_sudo(client, message):
+    await message.delete()
+    try:
+        user = message.command[1]     
+        if user in sudo_users:
+            with open("config.env", "r+") as f:
+                config = ""
+                for line in f:
+                    if "SUDO_USERS" in line:
+                        updated = line.replace(f"{user},", "")
+                        if user in updated:
+                            updated = line.replace(user, "")
+                        config += updated
+                    else:
+                        config += line
+
+                f.seek(0)
+                f.write(config)
+
+            delete(await app.send_message(message.chat.id, f"{user} removed from sudo user\n<a href='/restart'>/Restart</a> now"), 5)
+    
+    except Exception as e:
+        await app.send_message(message.chat.id, str(e))
+
+
+
+@Client.on_message(filters.command("help") & filters.user(sudo_users or owner_id))
 async def help(client, message):
     await message.delete()
     text = """
@@ -59,3 +128,10 @@ General Commands:
     service_msg = await app.send_message(message.chat.id, text)
     await delete(service_msg, 15)
     
+@Client.on_message(filters.command("restart") & filters.user(sudo_users))
+async def restart(client, message):
+    await delete(await message.reply_text("Restarting..."), 5)
+    await app.stop()
+    python_path = sys.executable
+    os.execl(python_path, "python -m bot")
+
