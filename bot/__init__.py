@@ -24,6 +24,10 @@ logging.Formatter.converter = timetz
 
 
 # Setting logger...
+if os.path.exists("log.txt"):
+    with open("log.txt", "w") as log:
+        log.truncate(0)
+        
 logging.basicConfig(format=("[%(asctime)s - %(name)s - %(levelname)s] %(message)s"),datefmt='%Y-%m-%d %I:%M:%S %p',
                     handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()], level=logging.INFO)
 
@@ -35,19 +39,22 @@ if os.path.exists("config.env"):
     load_dotenv("config.env", override=False)
 
 token = getenv("BOT_TOKEN", None)
-string = getenv("SESSION_STRING", None)
+session_string = getenv("SESSION_STRING", None)
 database_url = getenv("DATABASE_URL", None)
-remove_string = list(x for x in getenv("REMOVE_STRING", "").split(";"))
-sudo_users = ["me"]
+api_id = getenv("API_ID", None)
+api_hash = getenv("API_HASH", None)
+owner_id = int(getenv("OWNER_ID", 739663149))
+# remove_string = list(x for x in getenv("REMOVE_STRING", "").split(";"))
+sudo_users = [owner_id]
 temp_sudo = getenv("SUDO_USERS", None)
-tg_log = getenv("LOG_CHANNEL", "me")
-if temp_sudo is not None:
-    sudo_users.extend(temp_sudo.split(","))
+# tg_log = getenv("LOG_CHANNEL", None)
+if temp_sudo is not None and len(temp_sudo) > 0:
+    for each in temp_sudo.split(","):
+        sudo_users.append(int(each))
 
-if ((token is None) ^ (string is None)) and database_url is None:
+if ((token is None) ^ (session_string is None)) and database_url is None and api_id is None and api_hash is None and owner_id is None:
     log.info("one or more variables is missing...")
     exit(1)
-
 
 # Initializing database...
 try:
@@ -66,6 +73,7 @@ except Exception as e:
 sync_data = {}
 cursor.execute(f"select from_chat, to_chat from sync")
 data_values = cursor.fetchall()
+cursor.close()
 for each in data_values:
     try:
         sync_data[each[0]].append(each[1])
@@ -74,59 +82,20 @@ for each in data_values:
 from_chats = list(sync_data.keys())
 
 
-#loading missing sync
-async def missing_sync_data_loader(app):
-    missing_sync = {}
-    cursor.execute("select from_chat, from_chat_name, to_chat, to_chat_name, last_id from sync")
-    try:
-        for sync_data in cursor.fetchall():
-            from_chat, from_chat_name, to_chat, to_chat_name, stopped_id = sync_data
-            last_id = None
-            async for msg in app.get_chat_history(from_chat, 1):
-                last_id = msg.id
-            if stopped_id < last_id:    
-                try:
-                    missing_sync[from_chat].append([from_chat_name, to_chat, to_chat_name, stopped_id, last_id])
-                except KeyError:
-                    missing_sync[from_chat] = [[from_chat_name, to_chat, to_chat_name, stopped_id, last_id]]
-
-        if len(missing_sync) > 0:
-            for from_chat in missing_sync.keys():
-                for sync_data in missing_sync[from_chat]:
-                    from_chat_name, to_chat, to_chat_name, start_id, stop_id = sync_data
-                    cursor.execute(f"insert into copy(mode, from_chat, from_chat_name, to_chat, to_chat_name, start, current, stop) values('all', {from_chat}, '{from_chat_name}', {to_chat}, '{to_chat_name}', {start_id}, {start_id}, {stop_id})")
-                    db.commit()
-                    cursor.execute(f"update sync set last_id = {stop_id} where from_chat = {from_chat} and to_chat = {to_chat}")
-                    db.commit()
-        
-    except Exception as err:
-        log.exception(err)
-        pass    
-
-
 class Bot(Client):
 
-    def __init__(self):
+    def __init__(self, app_id = None, app_hash = None, string = None, token = None):
         super().__init__(
             name="nav",
-            session_string=string,
-            bot_token=token,
-            in_memory=True,
-            plugins=dict(root="bot.plugins")
+            api_id=app_id,
+            api_hash=app_hash,
+            session_string = string,
+            bot_token = token,
+            in_memory = True,
+            plugins = dict(root="bot.plugins")
         )
-
-    async def start(self):
-        await super().start()
-        await missing_sync_data_loader(self)
-        cursor.execute("select * from copy")
-        res = cursor.fetchall()
-        await self.send_message(tg_log, "Starting bot..." if len(res)==0 else "Bot started...\nSend <a href='/resume'>/resume</a> to restart the pending tasks...")
-        
-            
-        
+    
     async def stop(self, *args):
-        await self.send_message(tg_log, "Stopping bot...")
-        super().stop()      
-                
+        super().stop()
 
-app = Bot()
+app = Bot(string=session_string, token=token, app_id=api_id, app_hash=api_hash)
