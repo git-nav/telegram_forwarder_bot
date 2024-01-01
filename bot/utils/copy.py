@@ -8,18 +8,17 @@ OBJ_LIST = []
 
 class Copy:
 
-    cursor = db.cursor()
-
     def __init__(self, db_id):
         self.db_id = db_id
         self.run = True
+        self.cursor = db.cursor()
         self.c_time = time()
         self.obj_id = hex(self.__hash__())
         self.mode, self.from_chat, self.from_chat_name, self.to_chat, self.to_chat_name, self.start, self.current, self.stop = self.get_data(db_id)
         
     def get_data(self, db_id):
-        Copy.cursor.execute(f"select * from copy where id = {db_id}")
-        data = Copy.cursor.fetchone()
+        self.cursor.execute(f"select * from copy where id = {db_id}")
+        data = self.cursor.fetchone()
         return data[1:]
         
     async def start_copy(self):
@@ -70,7 +69,7 @@ class Copy:
 
             finally:
                 self.current += 1      
-                Copy.cursor.execute(f"update copy set current={self.current} where id = {self.db_id}")
+                self.cursor.execute(f"update copy set current={self.current} where id = {self.db_id}")
                 db.commit()
         
         if self.current > self.stop:
@@ -86,7 +85,7 @@ class Copy:
 
     async def cancel(self):
         self.run = False
-        Copy.cursor.execute(f"delete from copy where id ={self.db_id}")
+        self.cursor.execute(f"delete from copy where id ={self.db_id}")
         db.commit()
-        Copy.cursor.close()
+        self.cursor.close()
         OBJ_LIST.remove(self)
