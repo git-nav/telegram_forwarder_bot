@@ -62,6 +62,7 @@ try:
     cursor = db.cursor()
     cursor.execute("create table if not exists copy(id serial primary key, mode varchar(10), from_chat bigint, from_chat_name varchar(255), to_chat bigint,to_chat_name varchar(255), start int, current int, stop int)")
     cursor.execute("create table if not exists sync(id serial primary key, from_chat bigint, from_chat_name varchar(255), to_chat bigint, to_chat_name varchar(255), last_id int)")
+    # cursor.execute("create table if not exists user(id serial primary key, owner int, sudo int)")
     db.commit()
 
 except Exception as e:
@@ -73,7 +74,6 @@ except Exception as e:
 sync_data = {}
 cursor.execute(f"select from_chat, to_chat from sync")
 data_values = cursor.fetchall()
-cursor.close()
 for each in data_values:
     try:
         sync_data[each[0]].append(each[1])
@@ -96,6 +96,7 @@ class Bot(Client):
         )
     
     async def stop(self, *args):
+        cursor.close()
         super().stop()
 
 app = Bot(string=session_string, token=token, app_id=api_id, app_hash=api_hash)

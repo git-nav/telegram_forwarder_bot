@@ -1,11 +1,10 @@
-from bot import app, db, log
+from bot import app, db, cursor, log
 from pyrogram import idle
 from .utils.copy import Copy, OBJ_LIST
 from flask import Flask
 from threading import Thread
 import asyncio
 
-cursor = db.cursor()
 
 #loading missing sync
 async def missing_sync_loader():
@@ -40,7 +39,6 @@ async def missing_task():
     await missing_sync_loader()
     cursor.execute("select id from copy")
     copy_list = cursor.fetchall() 
-    cursor.close()    
 
     if len(copy_list) > 0:
         task = []

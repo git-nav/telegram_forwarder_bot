@@ -1,4 +1,4 @@
-from bot import log, db, sudo_users, start_time, app, from_chats, sync_data
+from bot import log, db, sudo_users, start_time, app, from_chats, sync_data, cursor
 from pyrogram import Client, filters
 from pyrogram.errors import FloodWait
 from time import time
@@ -22,9 +22,7 @@ async def sync(client, message):
                 break
             else:
                 break
-        cursor = db.cursor()
         cursor.execute(f"update sync set last_id={message_id} where from_chat={from_chat} and to_chat={to_chat}")
-        cursor.close()
         db.commit()        
                 
 
@@ -34,7 +32,6 @@ async def add_sync(client, message):
     data = message.command
 
     try:
-        cursor = db.cursor()
         from_chat_id = int(data[1])
         to_chat_id = int(data[2])
         from_chat_name = (await app.get_chat(from_chat_id)).title
@@ -48,8 +45,7 @@ async def add_sync(client, message):
     except Exception as e:
         log.exception(e)
         service_msg = await app.send_message(message.chat.id, e)    
-    finally:
-        cursor.close()    
+    
     await delete(service_msg, 10)
 
 @Client.on_message(filters.command("showsync") & filters.user(sudo_users))
@@ -57,21 +53,18 @@ async def show_sync(client, message):
     await message.delete()
     status = ""
     row_number = 1
-    cursor = db.cursor()
     cursor.execute("select * from sync")
     for each in cursor.fetchall():
         status += f"{row_number}. {each[2]} 🔄 {each[4]}\n"
         row_number += 1
     status += f"Uptime : {time_formatter(time() - start_time)}"    
     service_msg = await app.send_message(message.chat.id, status if row_number > 1 else f"No sync...\n\nUptime : {time_formatter(time()- start_time)}")
-    cursor.close()
     await delete(service_msg, 15)
 
 @Client.on_message(filters.command("delsync") & filters.user(sudo_users))
 async def del_sync(client, message):
     await message.delete()
     data = message.command
-    cursor = db.cursor()
     cursor.execute(f"select id from sync")
     try:
         del_id = cursor.fetchall()[int(data[1])-1][0]
@@ -82,6 +75,5 @@ async def del_sync(client, message):
     except Exception as e:
         log.exception(e)
         service_msg = await app.send_message(message.chat.id, e)        
-    cursor.close()    
     await delete(service_msg, 15)
     
