@@ -1,5 +1,5 @@
 from pyrogram import Client, filters
-from bot import app, db, sudo_users, log, owner_id
+from bot import app, db, sudo_users, log, owner_id, cursor
 from psycopg2.errors import InFailedSqlTransaction, ProgrammingError
 from bot.utils.util import delete
 import sys
@@ -12,7 +12,6 @@ async def execute(client, message):
     query = message.text[5:]
     text = "Returned data\n\n"
     try:
-        cursor = db.cursor()
         cursor.execute(f"{query}")
         for each in cursor.fetchall():
             text += str(each) + "\n"
@@ -29,7 +28,6 @@ async def execute(client, message):
         text += str(e)
 
     finally:
-        cursor.close()
         service_msg = await app.send_message(message.chat.id, text)
         await delete(service_msg, 15)        
 

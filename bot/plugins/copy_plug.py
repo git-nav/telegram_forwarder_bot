@@ -1,5 +1,5 @@
 from pyrogram import Client, filters
-from bot import db, log, sudo_users, start_time, app
+from bot import db, log, cursor, sudo_users, start_time, app
 from psycopg2.errors import ProgrammingError, InFailedSqlTransaction
 from time import time
 from bot.utils.util import time_formatter, static_vars, delete
@@ -19,7 +19,6 @@ async def copy(client, message):
         stop = msg[5]
         from_chat_name = (await app.get_chat(from_chat)).title
         to_chat_name = (await app.get_chat(to_chat)).title
-        cursor = db.cursor()
         try:
             cursor.execute(f"delete from copy where from_chat = {from_chat} and to_chat = {to_chat}")
             db.commit()
@@ -43,9 +42,7 @@ async def copy(client, message):
         log.exception(e)
         service_msg = await app.send_message(message.chat.id, e)    
         await delete(service_msg, 15)    
-    finally:
-        cursor.close()    
-
+    
     
 @Client.on_message(filters.command("status") & filters.user(sudo_users))
 @static_vars(counter = 0)

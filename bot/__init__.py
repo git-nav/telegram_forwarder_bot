@@ -73,7 +73,6 @@ except Exception as e:
 sync_data = {}
 cursor.execute(f"select from_chat, to_chat from sync")
 data_values = cursor.fetchall()
-cursor.close()
 for each in data_values:
     try:
         sync_data[each[0]].append(each[1])
@@ -96,6 +95,7 @@ class Bot(Client):
         )
     
     async def stop(self, *args):
+        cursor.close()
         super().stop()
 
 app = Bot(string=session_string, token=token, app_id=api_id, app_hash=api_hash)
