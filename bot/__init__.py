@@ -1,6 +1,6 @@
 import os 
 import logging
-import psycopg2
+# import psycopg2
 from os import getenv
 from sys import exit
 from dotenv import load_dotenv
@@ -8,7 +8,7 @@ from datetime import datetime
 from time import time
 from pytz import timezone
 from pyrogram import Client
-
+import sqlite3
 start_time = time()
 
 
@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 
 # Getting environmental variables...
 if os.path.exists("config.env"):
-    load_dotenv("config.env", override=False)
+    load_dotenv("config.env", override=True)
 
 token = getenv("BOT_TOKEN", None)
 session_string = getenv("SESSION_STRING", None)
@@ -58,10 +58,11 @@ if ((token is None) ^ (session_string is None)) and database_url is None and api
 
 # Initializing database...
 try:
-    db = psycopg2.connect(database_url)
+    # db = psycopg2.connect(database_url)
+    db = sqlite3.connect("my.db")
     cursor = db.cursor()
-    cursor.execute("create table if not exists copy(id serial primary key, mode varchar(10), from_chat bigint, from_chat_name varchar(255), to_chat bigint,to_chat_name varchar(255), start int, current int, stop int)")
-    cursor.execute("create table if not exists sync(id serial primary key, from_chat bigint, from_chat_name varchar(255), to_chat bigint, to_chat_name varchar(255), last_id int)")
+    cursor.execute("create table if not exists copy(id integer primary key, mode varchar(10), from_chat bigint, from_chat_name varchar(255), to_chat bigint,to_chat_name varchar(255), start int, current int, stop int)")
+    cursor.execute("create table if not exists sync(id integer primary key, from_chat bigint, from_chat_name varchar(255), to_chat bigint, to_chat_name varchar(255), last_id int)")
     db.commit()
 
 except Exception as e:

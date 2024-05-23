@@ -17,7 +17,7 @@ class Copy:
         
     def get_data(self, db_id):
         cursor.execute(f"select * from copy where id = {db_id}")
-        data = self.cursor.fetchone()
+        data = cursor.fetchone()
         return data[1:]
         
     async def start_copy(self):
